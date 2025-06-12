@@ -9,3 +9,12 @@ def extract_email(text):
     if matches:
         return matches[0]
     return None
+
+def extract_phone(text):
+    
+    pattern = r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}"
+    # ? -> varsa al yoksa alma anlamına gelir.
+    matches = re.findall(pattern, text)
+    if matches:
+        return matches[0]
+    return None
