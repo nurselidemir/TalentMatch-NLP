@@ -3,7 +3,7 @@ from pypdf import PdfReader
 from docx import Document
 import os
 # Python’ın dosya işlemleri için sunduğu yerleşik bir kütüphane. Dosyanın uzantısını .pdf mi .docx mi ayırmak için kullanıyoruz.
-from parser import extract_email, extract_phone
+from parser import extract_email, extract_phone, extract_name
 
 def extract_text_from_pdf(pdf_path):  # pdften metin çıkarma fonksiyonu
     reader = PdfReader(pdf_path)
@@ -36,3 +36,4 @@ if __name__ == "__main__":
 
     print("📧 E-posta adresi:", extract_email(extracted_text))
     print("📞 Telefon numarası:", extract_phone(extracted_text))
+    print("🧑 Ad Soyad:", extract_name(extracted_text))
