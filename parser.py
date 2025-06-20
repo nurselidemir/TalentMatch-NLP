@@ -2,6 +2,7 @@ import re
 # regex kütüphanesi bir metnin içinde belirli bir desen aramak için kullanılır.
 import spacy 
 # NLP ile ad soyad ayrıştırmak için
+import re
 
 def extract_email(text):
     pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
@@ -13,13 +14,18 @@ def extract_email(text):
     return None
 
 def extract_phone(text):
-    
-    pattern = r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}"
-    # ? -> varsa al yoksa alma anlamına gelir.
-    matches = re.findall(pattern, text)
-    if matches:
-        return matches[0]
+    """
+    +90 532 747 4000 veya +44 7911 123456 gibi numaraları tam olarak yakalar.
+    """
+    pattern = r"(\+?\d[\d\s\-().]{9,})"
+    match = re.search(pattern, text)
+    if match:
+        phone = match.group().strip()
+        digits = re.sub(r"\D", "", phone)
+        if len(digits) >= 10:
+            return phone
     return None
+
 
 nlp = spacy.load("en_core_web_sm")
 # spacynin ingilizce dil modelini yükledik.
@@ -33,3 +39,13 @@ def extract_name(text):
             return ent.text
     return None 
 
+def extract_sections_from_labeled(labeled_sections):
+    """
+    HuggingFace ile etiketlenmiş metinleri temiz ve sabit anahtarlarla döndürür.
+    """
+    parsed = {
+        "education": labeled_sections.get("Education", []),
+        "experience": labeled_sections.get("Experience", []),
+        "skills": labeled_sections.get("Skills", [])
+    }
+    return parsed
