@@ -12,3 +12,7 @@ pillow
 fastapi
 uvicorn
 pydantic
+pymongo==4.13.2
+dnspython==2.7.0
+gridfs==1.0.4
+python-dotenv==1.0.1
