@@ -19,5 +19,7 @@ distances, indices = search_similar(job_embedding, index, top_k=2)
 
 print("\nTop matching CVs:")
 for i, idx in enumerate(indices):
+    score = 1 / (1 + distances[i])
+    percent = round(score * 100, 2)
     print(f"{i+1}. CV {idx} → {cv_texts[idx]}")
-    print(f"   Distance (lower = more similar): {distances[i]:.4f}")
+    print(f"   Similarity: {percent}% (distance: {distances[i]:.4f})")
