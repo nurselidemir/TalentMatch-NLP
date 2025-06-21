@@ -23,3 +23,20 @@ for i, idx in enumerate(indices):
     percent = round(score * 100, 2)
     print(f"{i+1}. CV {idx} → {cv_texts[idx]}")
     print(f"   Similarity: {percent}% (distance: {distances[i]:.4f})")
+
+def find_missing_skills(job_skills, cv_skills):
+    """
+    İş ilanındaki becerilerden, CV'de eksik olanları döner.
+    Karşılaştırma büyük/küçük harfe duyarsızdır.
+    """
+    job_skills_set = {s.lower().strip() for s in job_skills}
+    cv_skills_set = {s.lower().strip() for s in cv_skills}
+
+    missing = job_skills_set - cv_skills_set
+    return list(missing)
+
+job_skills = ["Python", "FastAPI", "Docker", "TensorFlow"]
+cv_skills = ["Python", "FastAPI", "Pandas"]
+
+missing = find_missing_skills(job_skills, cv_skills)
+print("\nMissing Skills:", missing)
