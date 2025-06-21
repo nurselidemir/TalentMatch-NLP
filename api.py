@@ -1,64 +1,74 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List
+from fastapi import FastAPI, UploadFile, File, Form
 from job_parser import parse_job_posting
 from vectorizer import embed_text
+from emailer import send_match_email
+from parser import extract_text_from_pdf, extract_text_from_docx
 import faiss
 import numpy as np
-from emailer import send_match_email
 import os
 from dotenv import load_dotenv
 
-
-# FastAPI uygulamasını başlat
 app = FastAPI()
 
-# Basit root endpoint
 @app.get("/")
 def home():
     return {"message": "TalentMatch API is live!"}
 
-# İstek verisi için model
-class MatchRequest(BaseModel):
-    job_text: str
-    cv_texts: List[str]
-    top_k: int = 2  # admin isterse değiştirebilir.
-    to_email: str  # eşleşme sonucu nereye gitsin?
-
-# CV eşleştirme endpoint'i
 @app.post("/match")
-def match_cvs(data: MatchRequest):
-    job_info = parse_job_posting(data.job_text)
-    job_vector = embed_text(data.job_text)
-    cv_vectors = np.array([embed_text(cv) for cv in data.cv_texts])
+async def match_cvs(
+    job_text: str = Form(...),
+    to_email: str = Form(...),
+    top_k: int = Form(2),
+    cv_file: UploadFile = File(...)
+):
+    # Dosya uzantısına göre içeriği oku
+    filename = cv_file.filename.lower()
+    contents = await cv_file.read()
+
+    if filename.endswith(".pdf"):
+        with open("temp.pdf", "wb") as f:
+            f.write(contents)
+        extracted_text = extract_text_from_pdf("temp.pdf")
+
+    elif filename.endswith(".docx"):
+        with open("temp.docx", "wb") as f:
+            f.write(contents)
+        extracted_text = extract_text_from_docx("temp.docx")
+
+    else:
+        return {"error": "Only .pdf and .docx files are supported."}
+
+    # İş ilanı analizi ve embedding
+    job_info = parse_job_posting(job_text)
+    job_vector = embed_text(job_text)
+    cv_vector = embed_text(extracted_text)
 
     index = faiss.IndexFlatL2(job_vector.shape[0])
-    index.add(cv_vectors)
-    distances, indices = index.search(np.array([job_vector]), k=data.top_k)
+    index.add(np.array([cv_vector]))
+    distances, indices = index.search(np.array([job_vector]), k=top_k)
 
     results = []
     for i, idx in enumerate(indices[0]):
         similarity = 100 / (1 + distances[0][i])
-        similarity = float(similarity)  
-        cv_text = data.cv_texts[idx]
-        cv_text_lower = cv_text.lower()
+        similarity = float(similarity)
+        cv_text_lower = extracted_text.lower()
 
         skills = job_info.get("skills") or []
         missing_skills = [s for s in skills if s.lower() not in cv_text_lower]
 
         results.append({
-            "cv": cv_text,
+            "cv": extracted_text,
             "similarity": round(similarity, 2),
             "missing_skills": missing_skills
         })
 
-    # 📨 E-posta ile gönderim
+    # E-posta gönderimi
     load_dotenv()
     sender_email = os.getenv("SENDER_EMAIL")
     sender_password = os.getenv("SENDER_PASSWORD")
 
     send_match_email(
-        to_email=data.to_email,
+        to_email=to_email,
         match_results=results,
         sender_email=sender_email,
         sender_password=sender_password
