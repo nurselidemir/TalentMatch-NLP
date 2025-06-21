@@ -18,7 +18,7 @@ def home():
 class MatchRequest(BaseModel):
     job_text: str
     cv_texts: List[str]
-
+    top_k: int = 2  # admin isterse değiştirebilir.
 # CV eşleştirme endpoint'i
 @app.post("/match")
 def match_cvs(data: MatchRequest):
@@ -30,7 +30,8 @@ def match_cvs(data: MatchRequest):
 
     index = faiss.IndexFlatL2(job_vector.shape[0])
     index.add(cv_vectors)
-    distances, indices = index.search(np.array([job_vector]), k=2)
+    distances, indices = index.search(np.array([job_vector]), k=data.top_k)
+
 
     results = []
     for i, idx in enumerate(indices[0]):
