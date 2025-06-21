@@ -1,23 +1,11 @@
-from pypdf import PdfReader
-# pypdf kütüphanesinden PdfReader adında bir sınıf (araç) alıyoruz. Bu araç .pdf uzantılı dosyaları açıp içindeki metni çıkarabiliyor.
-from docx import Document
 import os
 # Python’ın dosya işlemleri için sunduğu yerleşik bir kütüphane. Dosyanın uzantısını .pdf mi .docx mi ayırmak için kullanıyoruz.
 from parser import extract_email, extract_phone, extract_name
+from sectioner import segment_and_classify_sections
+from parser import extract_sections_from_labeled
+from parser import summarize_text
+from parser import extract_text_from_pdf, extract_text_from_docx
 
-def extract_text_from_pdf(pdf_path):  # pdften metin çıkarma fonksiyonu
-    reader = PdfReader(pdf_path)
-    text = ""
-    for page in reader.pages:    # reader içindeki sayfaları tek tek dolaşıyoruz
-        text += page.extract_text() # extract_text() metodu, o sayfadan düz metni (text) çıkarır.
-    return text
-# extract_text(): pypdf kütüphanesindeki PageObject sınıfının metodudur.
-def extract_text_from_docx(docx_path):
-    doc = Document(docx_path)
-    text = ""
-    for para in doc.paragraphs:
-        text += para.text + "\n"
-    return text
 
 if __name__ == "__main__":
     file_name = input("📂 Lütfen .pdf veya .docx dosyasının yolunu girin: ").strip()
@@ -37,3 +25,23 @@ if __name__ == "__main__":
     print("📧 E-posta adresi:", extract_email(extracted_text))
     print("📞 Telefon numarası:", extract_phone(extracted_text))
     print("🧑 Ad Soyad:", extract_name(extracted_text))
+    
+sections = segment_and_classify_sections(extracted_text)
+
+for label, paras in sections.items():
+    print(f"\n{label.upper()}")
+    for p in paras:
+        print(f" - {p}")
+
+parsed = extract_sections_from_labeled(sections)
+
+print("\n Structured Output:")
+print("Education:", parsed["education"])
+print("Experience:", parsed["experience"])
+print("Skills:", parsed["skills"])
+
+
+summary = summarize_text(extracted_text)
+print("\n CV summary:")
+print(summary)
+    

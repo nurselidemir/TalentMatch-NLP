@@ -3,6 +3,10 @@ import re
 import spacy 
 # NLP ile ad soyad ayrıştırmak için
 import re
+from transformers import pipeline
+from pypdf import PdfReader
+# pypdf kütüphanesinden PdfReader adında bir sınıf (araç) alıyoruz. Bu araç .pdf uzantılı dosyaları açıp içindeki metni çıkarabiliyor.
+from docx import Document
 
 def extract_email(text):
     pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
@@ -49,3 +53,23 @@ def extract_sections_from_labeled(labeled_sections):
         "skills": labeled_sections.get("Skills", [])
     }
     return parsed
+
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+
+def summarize_text(text, max_length=130, min_length=30):
+    summarized = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
+    return summarized[0]['summary_text']
+
+def extract_text_from_pdf(pdf_path):  # pdften metin çıkarma fonksiyonu
+    reader = PdfReader(pdf_path)
+    text = ""
+    for page in reader.pages:    # reader içindeki sayfaları tek tek dolaşıyoruz
+        text += page.extract_text() # extract_text() metodu, o sayfadan düz metni (text) çıkarır.
+    return text
+# extract_text(): pypdf kütüphanesindeki PageObject sınıfının metodudur.
+def extract_text_from_docx(docx_path):
+    doc = Document(docx_path)
+    text = ""
+    for para in doc.paragraphs:
+        text += para.text + "\n"
+    return text
